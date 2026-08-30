@@ -1,0 +1,47 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Home Assistant Community App: VictoriaMetrics
+# Runs the VictoriaMetrics server
+# ==============================================================================
+readonly SCRAPE_CONFIG="/etc/victoriametrics/scrape.yaml"
+declare -a options
+declare log_level
+
+# VictoriaMetrics has its own, smaller, set of log levels.
+log_level="INFO"
+case "$(bashio::string.lower "$(bashio::config 'log_level' 'info')")" in
+    trace|debug|info|notice)    log_level="INFO" ;;
+    warning)                    log_level="WARN" ;;
+    error)                      log_level="ERROR" ;;
+    fatal)                      log_level="FATAL" ;;
+esac
+
+# Only ever listen on loopback; NGINX is what faces Ingress and the network.
+options+=(-httpListenAddr "127.0.0.1:48428")
+options+=(-storageDataPath "/data/victoriametrics")
+options+=(-retentionPeriod "$(bashio::config 'retention_period')")
+options+=(-storage.minFreeDiskSpaceBytes "$(bashio::config 'min_free_disk_space')")
+options+=(-search.latencyOffset "$(bashio::config 'latency_offset')")
+options+=(-loggerLevel "${log_level}")
+options+=(-loggerTimezone "Local")
+
+# Keep an eye on the database itself, so "is VictoriaMetrics keeping up?" is a
+# question that can be answered from the data it already holds.
+options+=(-selfScrapeInterval "$(bashio::config 'scrape_interval')")
+
+if bashio::config.has_value 'dedup_min_scrape_interval'; then
+    options+=(-dedup.minScrapeInterval "$(bashio::config 'dedup_min_scrape_interval')")
+fi
+
+if bashio::config.has_value 'memory_allowed_percent'; then
+    options+=(-memory.allowedPercent "$(bashio::config 'memory_allowed_percent')")
+fi
+
+if bashio::fs.file_exists "${SCRAPE_CONFIG}"; then
+    options+=(-promscrape.config "${SCRAPE_CONFIG}")
+fi
+
+bashio::log.info "Starting VictoriaMetrics..."
+
+exec victoria-metrics "${options[@]}"

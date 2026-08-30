@@ -1,0 +1,13 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Home Assistant Community App: VictoriaMetrics
+# Runs the NGINX daemon
+# ==============================================================================
+
+# Wait for VictoriaMetrics to become available. Replaying the write ahead log
+# of a large database after an unclean shutdown can take a while.
+bashio::net.wait_for 48428 127.0.0.1 900
+
+bashio::log.info "Starting NGINX..."
+exec nginx

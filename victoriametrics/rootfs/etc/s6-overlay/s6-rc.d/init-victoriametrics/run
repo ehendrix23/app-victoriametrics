@@ -1,0 +1,136 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Home Assistant Community App: VictoriaMetrics
+# Prepares storage and builds the scrape configuration
+# ==============================================================================
+readonly STORAGE="/data/victoriametrics"
+readonly SCRAPE_CONFIG="/etc/victoriametrics/scrape.yaml"
+declare retention
+declare latency_offset
+declare scrape_config
+declare -i jobs=0
+
+mkdir -p "${STORAGE}"
+mkdir -p "$(dirname "${SCRAPE_CONFIG}")"
+
+# Catch a bad retention up front. Left to VictoriaMetrics it is a flag parse
+# error, which puts the app in a restart loop with the reason buried in the
+# log. The suffixes are its own, and the lower case "m" people reach for first
+# means minutes there, not months.
+retention=$(bashio::config 'retention_period')
+if ! [[ "${retention}" =~ ^[0-9]+(\.[0-9]+)?[shdwMy]?$ ]]; then
+    bashio::log.fatal
+    bashio::log.fatal "The configured retention period is not valid:"
+    bashio::log.fatal "  ${retention}"
+    bashio::log.fatal
+    bashio::log.fatal "Use a number with one of these suffixes:"
+    bashio::log.fatal "  s (second), h (hour), d (day), w (week),"
+    bashio::log.fatal "  M (month, capital M), y (year)"
+    bashio::log.fatal
+    bashio::log.fatal "For example: 1y, 18M, 90d"
+    bashio::log.fatal
+    bashio::exit.nok
+fi
+
+# Same treatment for the latency offset, which is a plain Go duration.
+latency_offset=$(bashio::config 'latency_offset')
+if ! [[ "${latency_offset}" =~ ^(0|[0-9]+(\.[0-9]+)?(ms|s|m|h))$ ]]; then
+    bashio::log.fatal
+    bashio::log.fatal "The configured latency offset is not valid:"
+    bashio::log.fatal "  ${latency_offset}"
+    bashio::log.fatal
+    bashio::log.fatal "Use a number with a ms, s, m or h suffix, for example"
+    bashio::log.fatal "1m, 5s or 0s to switch it off entirely."
+    bashio::log.fatal
+    bashio::exit.nok
+fi
+
+# The scrape configuration is rebuilt from the app options on every start, so
+# a job that is switched off in the options disappears here as well.
+{
+    echo "global:"
+    echo "  scrape_interval: $(bashio::config 'scrape_interval')"
+    echo "scrape_configs:"
+} > "${SCRAPE_CONFIG}"
+
+if bashio::config.true 'home_assistant'; then
+    # Home Assistant's Prometheus endpoint is reached through the Supervisor
+    # proxy, so nobody has to create a long lived access token by hand.
+    # VictoriaMetrics expands %{ENV_VAR} itself when it reads this file, which
+    # keeps the token out of it.
+    cat >> "${SCRAPE_CONFIG}" <<'EOF'
+  - job_name: home-assistant
+    metrics_path: /core/api/prometheus
+    bearer_token: "%{SUPERVISOR_TOKEN}"
+    static_configs:
+      - targets:
+          - supervisor
+EOF
+    jobs+=1
+
+    # The endpoint only exists when the Prometheus integration is enabled.
+    # Scraping a missing one is not fatal, it just fills the log with errors
+    # forever, so say so once, clearly, at startup instead.
+    if ! curl --silent --fail --output /dev/null \
+        --header "Authorization: Bearer ${SUPERVISOR_TOKEN:-}" \
+        "http://supervisor/core/api/prometheus";
+    then
+        bashio::log.warning
+        bashio::log.warning "Home Assistant is not exposing metrics yet."
+        bashio::log.warning
+        bashio::log.warning "Add the following to your configuration.yaml and"
+        bashio::log.warning "restart Home Assistant:"
+        bashio::log.warning
+        bashio::log.warning "  prometheus:"
+        bashio::log.warning
+        bashio::log.warning "Or set the 'home_assistant' option to false if you"
+        bashio::log.warning "collect your metrics some other way."
+        bashio::log.warning
+    fi
+fi
+
+# Merge in extra scrape jobs the user dropped in this app's configuration
+# directory. Only their scrape_configs are taken; the global section stays
+# under the control of the app options.
+if bashio::config.has_value 'scrape_config'; then
+    scrape_config="/config/$(bashio::config 'scrape_config')"
+
+    if ! bashio::fs.file_exists "${scrape_config}"; then
+        bashio::log.fatal
+        bashio::log.fatal "The configured scrape configuration file is missing:"
+        bashio::log.fatal "  ${scrape_config}"
+        bashio::log.fatal
+        bashio::log.fatal "The file is looked up in this app's own"
+        bashio::log.fatal "configuration directory."
+        bashio::log.fatal
+        bashio::exit.nok
+    fi
+
+    yq --inplace --exit-status eval \
+        ".scrape_configs = ((.scrape_configs // []) + (load(\"${scrape_config}\") | .scrape_configs // []))" \
+        "${SCRAPE_CONFIG}" \
+            || bashio::exit.nok "Failed reading ${scrape_config}"
+
+    jobs=$(yq eval '.scrape_configs | length' "${SCRAPE_CONFIG}")
+fi
+
+if [[ "${jobs}" -eq 0 ]]; then
+    # Nothing to scrape. VictoriaMetrics rejects a scrape_configs without any
+    # jobs, and the run script skips the flag when this file is gone.
+    rm -f "${SCRAPE_CONFIG}"
+    bashio::log.info "No scrape targets configured, only accepting pushed data"
+    exit 0
+fi
+
+# Fail on a broken configuration here, with the parse error in the log, rather
+# than letting VictoriaMetrics restart over it.
+if ! victoria-metrics \
+    -promscrape.config="${SCRAPE_CONFIG}" \
+    -promscrape.config.dryRun \
+    -loggerLevel=ERROR;
+then
+    bashio::exit.nok "The scrape configuration is not valid"
+fi
+
+bashio::log.info "Scraping ${jobs} target(s) every $(bashio::config 'scrape_interval')"
