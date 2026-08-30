@@ -5,7 +5,7 @@ slug: victoriametrics
 description: Fast and resource efficient time series database for your metrics
 url: https://github.com/hassio-addons/app-victoriametrics
 ingress: true
-ingress_port: 0
+ingress_port: 1337
 ingress_stream: true
 panel_icon: mdi:database-clock
 startup: services
