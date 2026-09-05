@@ -52,7 +52,7 @@ main @ 90409d8c1699a9e77aaa3c1c5c0a1ae45ddd712d
 The wrapper version is currently:
 
 ```text
-2026.9.5.1
+0.1.0
 ```
 
 Wrapper versions are intentionally independent from upstream release versions.
@@ -109,7 +109,8 @@ stream_aggregation_config: stream-aggregation.yaml
 ```
 
 See `victoriametrics/STREAM_AGGREGATION.md` for the feature behavior and
-configuration format.
+configuration format. A starter template is available at
+`victoriametrics/stream-aggregation.example.yaml`.
 
 ## Development rule
 
