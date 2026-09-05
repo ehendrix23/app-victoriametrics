@@ -38,6 +38,10 @@ if bashio::config.has_value 'memory_allowed_percent'; then
     options+=(-memory.allowedPercent "$(bashio::config 'memory_allowed_percent')")
 fi
 
+if bashio::config.has_value 'stream_aggregation_config'; then
+    options+=(-streamAggr.config "/config/$(bashio::config 'stream_aggregation_config')")
+fi
+
 if bashio::fs.file_exists "${SCRAPE_CONFIG}"; then
     options+=(-promscrape.config "${SCRAPE_CONFIG}")
 fi

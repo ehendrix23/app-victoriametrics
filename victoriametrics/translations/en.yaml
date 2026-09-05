@@ -24,6 +24,12 @@ configuration:
       The name of a YAML file in this app's configuration directory holding
       extra Prometheus `scrape_configs` jobs, for targets other than Home
       Assistant itself.
+  stream_aggregation_config:
+    name: Stream aggregation configuration
+    description: >-
+      The name of a YAML file in this app's configuration directory defining
+      VictoriaMetrics stream aggregation rules. Matching raw samples are
+      aggregated before storage and are dropped by default.
   retention_period:
     name: Retention period
     description: >-
