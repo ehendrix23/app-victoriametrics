@@ -1,118 +1,118 @@
-# Home Assistant Community App: VictoriaMetrics
+# VictoriaMetrics for Home Assistant — permanent installation branch
 
-[![GitHub Release][releases-shield]][releases]
-![Project Stage][project-stage-shield]
-[![License][license-shield]](LICENSE.md)
+This branch is the permanent Home Assistant repository endpoint for Erik's
+VictoriaMetrics installation.
 
-[![Github Actions][github-actions-shield]][github-actions]
-![Project Maintenance][maintenance-shield]
-[![GitHub Activity][commits-shield]][commits]
+## Repository URL
 
-[![Sponsor Frenck via GitHub Sponsors][github-sponsors-shield]][github-sponsors]
+Add this exact URL to Home Assistant and do not change it after installation:
 
-[![Support Frenck on Patreon][patreon-shield]][patreon]
+```text
+https://github.com/ehendrix23/app-victoriametrics#ha-repository
+```
 
-Fast and resource efficient time series database for your metrics.
+Home Assistant derives the repository identity from the complete repository
+URL, including the branch suffix. Keeping this URL unchanged preserves the
+installed app identity when the implementation on this branch is updated.
 
-## About
+For this URL the repository identifier is:
 
-[VictoriaMetrics][victoriametrics] is a fast, cost effective and scalable time
-series database. It speaks the Prometheus query language and API, but stores
-the same data in a fraction of the space and happily runs on the kind of
-hardware Home Assistant tends to live on.
+```text
+86fb6935
+```
 
-Home Assistant's own recorder is built to answer "what is happening now". It is
-not built to answer "how has this changed over the past three years", and
-keeping enough history around to do so makes it slower at the job it is
-actually for. This app gives those long term numbers a home of their own: point
-it at Home Assistant, pick how long to keep things, and query the result from
-its built-in web interface or from Grafana.
+and the installed app identifier is therefore:
 
-[:books: Read the full app documentation][docs]
+```text
+86fb6935_victoriametrics
+```
 
-## Support
+The app configuration directory exposed by Home Assistant is:
 
-Got questions?
+```text
+/addon_configs/86fb6935_victoriametrics
+```
 
-You have several options to get them answered:
+## Current source
 
-- The [Home Assistant Community Apps Discord chat server][discord] for app
-  support and feature requests.
-- The [Home Assistant Discord chat server][discord-ha] for general Home
-  Assistant discussions and questions.
-- The Home Assistant [Community Forum][forum].
-- Join the [Reddit subreddit][reddit] in [/r/homeassistant][reddit]
+The app currently contains the stream-aggregation implementation developed on:
 
-You could also [open an issue here][issue] GitHub.
+```text
+ehendrix23/app-victoriametrics
+feature/stream-aggregation-config
+```
 
-## Contributing
+The implementation is based on:
 
-This is an active open-source project. We are always open to people who want to
-use the code or contribute to it.
+```text
+hassio-addons/app-victoriametrics
+main @ 90409d8c1699a9e77aaa3c1c5c0a1ae45ddd712d
+```
 
-We have set up a separate document containing our
-[contribution guidelines](.github/CONTRIBUTING.md).
+The wrapper version is currently:
 
-Thank you for being involved! :heart_eyes:
+```text
+2026.9.5.1
+```
 
-## Authors & contributors
+Wrapper versions are intentionally independent from upstream release versions.
+They provide Home Assistant with a monotonically increasing version so changes
+to this permanent branch can be installed as normal app updates.
 
-The original setup of this repository is by [Franck Nijhof][frenck].
+## Future upstream transition
 
-For a full list of all authors and contributors,
-check [the contributor's page][contributors].
+When stream aggregation is merged upstream, this branch should be updated by
+replacing the `victoriametrics/` application contents with the desired upstream
+release/main contents while preserving:
 
-## We have got some Home Assistant apps for you
+- this `ha-repository` branch;
+- the exact repository URL above;
+- `repository.yaml`;
+- the app `slug: victoriametrics`;
+- the wrapper version progression.
 
-Want some more functionality to your Home Assistant instance?
+That leaves Home Assistant pointing at the same repository identity and the
+same app identity. The application's `/data` volume, Home Assistant options,
+and `/addon_configs/86fb6935_victoriametrics` directory therefore remain tied
+to the same installed app while its code is updated.
 
-We have created multiple apps for Home Assistant. For a full list, check out
-our [GitHub Repository][repository].
+If desired later, the installation can still be migrated to the official
+Home Assistant Community Apps repository. That is a separate migration because
+the official repository URL has a different Home Assistant repository identity.
 
-## License
+## Installation
 
-MIT License
+In Home Assistant:
 
-Copyright (c) 2026 Franck Nijhof
+1. Open **Settings > Apps**.
+2. Open the App Store / install-app view.
+3. Open the repository management menu.
+4. Add exactly:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   ```text
+   https://github.com/ehendrix23/app-victoriametrics#ha-repository
+   ```
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+5. Refresh the store if necessary.
+6. Open **VictoriaMetrics** from **Erik's VictoriaMetrics**.
+7. Install it.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+The app can be installed and started without stream aggregation configured.
+When stream aggregation is ready to be enabled, place its YAML configuration
+in `/addon_configs/86fb6935_victoriametrics` and set the app option
+`stream_aggregation_config` to the relative filename.
 
-[commits-shield]: https://img.shields.io/github/commit-activity/y/hassio-addons/app-victoriametrics.svg
-[commits]: https://github.com/hassio-addons/app-victoriametrics/commits/main
-[contributors]: https://github.com/hassio-addons/app-victoriametrics/graphs/contributors
-[discord-ha]: https://discord.gg/c5DvZ4e
-[discord]: https://discord.me/hassioaddons
-[docs]: https://github.com/hassio-addons/app-victoriametrics/blob/main/victoriametrics/DOCS.md
-[forum]: https://community.home-assistant.io/t/?u=frenck
-[frenck]: https://github.com/frenck
-[github-actions-shield]: https://github.com/hassio-addons/app-victoriametrics/workflows/CI/badge.svg
-[github-actions]: https://github.com/hassio-addons/app-victoriametrics/actions
-[github-sponsors-shield]: https://frenck.dev/wp-content/uploads/2019/12/github_sponsor.png
-[github-sponsors]: https://github.com/sponsors/frenck
-[issue]: https://github.com/hassio-addons/app-victoriametrics/issues
-[license-shield]: https://img.shields.io/github/license/hassio-addons/app-victoriametrics.svg
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
-[patreon-shield]: https://frenck.dev/wp-content/uploads/2019/12/patreon.png
-[patreon]: https://www.patreon.com/frenck
-[project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
-[reddit]: https://reddit.com/r/homeassistant
-[releases-shield]: https://img.shields.io/github/release/hassio-addons/app-victoriametrics.svg
-[releases]: https://github.com/hassio-addons/app-victoriametrics/releases
-[repository]: https://github.com/hassio-addons/repository
-[victoriametrics]: https://victoriametrics.com/
+Example:
+
+```yaml
+stream_aggregation_config: stream-aggregation.yaml
+```
+
+See `victoriametrics/STREAM_AGGREGATION.md` for the feature behavior and
+configuration format.
+
+## Development rule
+
+Do not develop directly on this branch. Feature development belongs on normal
+feature branches. This branch is an installation/promotion branch whose purpose
+is to keep the Home Assistant repository pointer stable.
