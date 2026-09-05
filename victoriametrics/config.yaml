@@ -39,6 +39,7 @@ schema:
   home_assistant: bool
   scrape_interval: str
   scrape_config: str?
+  stream_aggregation_config: str?
   retention_period: str
   dedup_min_scrape_interval: str?
   min_free_disk_space: str

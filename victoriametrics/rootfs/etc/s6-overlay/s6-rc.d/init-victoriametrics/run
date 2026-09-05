@@ -9,6 +9,8 @@ readonly SCRAPE_CONFIG="/etc/victoriametrics/scrape.yaml"
 declare retention
 declare latency_offset
 declare scrape_config
+declare stream_aggregation_config
+declare stream_aggregation_name
 declare -i jobs=0
 
 mkdir -p "${STORAGE}"
@@ -113,6 +115,50 @@ if bashio::config.has_value 'scrape_config'; then
             || bashio::exit.nok "Failed reading ${scrape_config}"
 
     jobs=$(yq eval '.scrape_configs | length' "${SCRAPE_CONFIG}")
+fi
+
+# Stream aggregation is applied to samples as they are ingested, regardless of
+# whether they were scraped or pushed. Validate the user-supplied configuration
+# before the server starts so a typo cannot leave the app running without the
+# aggregation policy the user expected.
+if bashio::config.has_value 'stream_aggregation_config'; then
+    stream_aggregation_name=$(bashio::config 'stream_aggregation_config')
+
+    # Keep this option confined to the app's own read-only configuration
+    # directory. Nested relative paths are fine; absolute paths and parent
+    # traversal are not.
+    if [[ "${stream_aggregation_name}" == /* \
+        || "${stream_aggregation_name}" == ".." \
+        || "${stream_aggregation_name}" == ../* \
+        || "${stream_aggregation_name}" == */../* \
+        || "${stream_aggregation_name}" == */.. ]];
+    then
+        bashio::exit.nok \
+            "The stream aggregation configuration must be a relative path inside the app configuration directory"
+    fi
+
+    stream_aggregation_config="/config/${stream_aggregation_name}"
+
+    if ! bashio::fs.file_exists "${stream_aggregation_config}"; then
+        bashio::log.fatal
+        bashio::log.fatal "The configured stream aggregation file is missing:"
+        bashio::log.fatal "  ${stream_aggregation_config}"
+        bashio::log.fatal
+        bashio::log.fatal "The file is looked up in this app's own"
+        bashio::log.fatal "configuration directory."
+        bashio::log.fatal
+        bashio::exit.nok
+    fi
+
+    if ! victoria-metrics \
+        -streamAggr.config="${stream_aggregation_config}" \
+        -dryRun \
+        -loggerLevel=ERROR;
+    then
+        bashio::exit.nok "The stream aggregation configuration is not valid"
+    fi
+
+    bashio::log.info "Stream aggregation configuration is valid"
 fi
 
 if [[ "${jobs}" -eq 0 ]]; then
