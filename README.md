@@ -27,6 +27,17 @@ and the installed app identifier is therefore:
 86fb6935_victoriametrics
 ```
 
+The stable internal app hostname on the Home Assistant app network is:
+
+```text
+86fb6935-victoriametrics
+```
+
+Use that hostname when another Home Assistant component or app needs to reach
+this VictoriaMetrics instance over the internal app network. Upstream examples
+that use `a0d7b954-victoriametrics` refer to the official Community Apps
+repository and do not identify this permanent wrapper installation.
+
 The app configuration directory exposed by Home Assistant is:
 
 ```text
