@@ -15,17 +15,21 @@
     - avg
     - min
     - max
-    - quantiles(0.5, 0.95)
+    - "quantiles(0.5, 0.95)"
     - last
     - count_samples
 
 - match: '{__name__=~"example_gauge_.*"}'
   interval: 1h
   outputs:
-    - quantiles(0.5, 0.95)
+    - "quantiles(0.5, 0.95)"
 
+# For cumulative counters that already have a non-zero value when VictoriaMetrics
+# starts, increase_prometheus avoids treating that first observed baseline as an
+# increase from zero. This is generally safer for Home Assistant cumulative
+# energy/cost totals than the plain increase output.
 - match: '{__name__=~"example_cumulative_(energy|cost)_.*"}'
   interval: 15m
   outputs:
-    - increase
+    - increase_prometheus
     - last
