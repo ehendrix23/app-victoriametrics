@@ -46,22 +46,34 @@ raw sample:
     - max
     - last
     - count_samples
-    - quantiles(0.5, 0.95)
+    - "quantiles(0.5, 0.95)"
 ```
 
-A counter can instead store its increase and final value in each interval:
+A cumulative counter that may already be non-zero when VictoriaMetrics starts
+should normally use `increase_prometheus` plus `last`:
 
 ```yaml
 - name: example-counters-15m
   match: '{__name__=~"example_energy_total|example_cost_total"}'
   interval: 15m
   outputs:
-    - increase
+    - increase_prometheus
     - last
 ```
 
+VictoriaMetrics' plain `increase` output assumes a newly seen counter starts at
+zero. If the first sample seen after VictoriaMetrics starts is, for example,
+`12345`, that baseline can be counted as an increase. `increase_prometheus`
+ignores the first observed sample for each newly seen series, which is generally
+safer for Home Assistant cumulative energy and cost totals. The trade-off is
+that the first delta after aggregation state is lost or reset cannot be
+reconstructed from that output alone, which is one reason retaining `last` is
+useful as well.
+
 The file can contain multiple independent rules, including multiple intervals
-for the same input series.
+for the same input series. For example, gauges can have full 15-minute summary
+outputs and a second hourly rule containing only exact hourly quantiles over the
+original incoming samples.
 
 ## Raw input behavior
 
