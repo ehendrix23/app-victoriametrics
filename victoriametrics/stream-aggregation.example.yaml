@@ -1,0 +1,31 @@
+# Example only. Copy this file into the app configuration directory and tailor
+# the match expressions and output names to the metrics you actually ingest.
+#
+# Home Assistant path after installation from the permanent repository branch:
+#   /addon_configs/86fb6935_victoriametrics/stream-aggregation.yaml
+#
+# App option:
+#   stream_aggregation_config: stream-aggregation.yaml
+#
+# See STREAM_AGGREGATION.md for behavior and upstream syntax details.
+
+- match: '{__name__=~"example_gauge_.*"}'
+  interval: 15m
+  outputs:
+    - avg
+    - min
+    - max
+    - quantiles(0.5, 0.95)
+    - last
+    - count_samples
+
+- match: '{__name__=~"example_gauge_.*"}'
+  interval: 1h
+  outputs:
+    - quantiles(0.5, 0.95)
+
+- match: '{__name__=~"example_cumulative_(energy|cost)_.*"}'
+  interval: 15m
+  outputs:
+    - increase
+    - last
